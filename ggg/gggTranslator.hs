@@ -87,6 +87,7 @@ char_to_g_map_creator msg =
         letterOrdStart = (floor (logBase 2.0 (fromIntegral $  length uniqueLetters)) + 1) ^ 2
         uniqueLettersString = [[c] | c <- uniqueLetters]
         gggIter = [intTogggIter i | i <- [(toInteger letterOrdStart)..]]
+
         
 
 exampleMsg =  "I did not! Oh hai mark."
@@ -97,7 +98,35 @@ exampleRevEncode = g_rev_translater exampleGToChMap exampleGggEncode
 exampleTrue = exampleMsg == exampleRevEncode
 
 
-main = do
-  putStrLn "OH HI"
+decodePrompt = do
+  putStr "Please enter g/G key (<letter> <gcombo> ... format): "
+  g_key <- getLine
+  putStr "Please enter ggg message: "
+  g_msg <- getLine
 
+  let gToCharMap = ggg_to_letter_map g_key
+  let decoded = g_rev_translater gToCharMap g_msg
+
+  return (decoded)
+  
+
+encodePrompt = do
+  putStr "Please enter message"
+  msg <- getLine
+
+  let charToGMap = char_to_g_map_creator msg
+  let encoded = g_encoder charToGMap msg
+
+  return (encoded)
+
+
+main = do
+  putStr "(D)ecode or (E)ncode?:"
+  action <- getLine
+  output <- case (toLower . head) action
+        of 'd' -> decodePrompt
+           'e' -> encodePrompt
+--             _ -> do putStrLn "Please enter d for decode or e for encode" 
+
+  putStrLn output
   
