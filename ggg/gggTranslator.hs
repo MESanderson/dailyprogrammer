@@ -6,10 +6,6 @@ import Data.Char
 import Data.List
 import qualified Data.Set as Set
 
-tst_hdr = "H GgG d gGg e ggG l GGg o gGG r Ggg w ggg"
-
-tst_msg = "GgGggGGGgGGggGG, ggggGGGggGGggGg!"
-tst_rev_msg = "Hello, world!"
 
 -- |chunk function to group list into list of n element lists
 -- similar to simple version of clojure's partition
@@ -107,7 +103,7 @@ encodePrompt = do
   let charToGMap = char_to_g_map_creator msg
   let encoded = g_encoder charToGMap msg
 
-  let key_out = concatMap (\(a,b) -> a ++ " " ++ b ++ " ") $ Map.toList exampleChToGMap 
+  let key_out = concatMap (\(a,b) -> a ++ " " ++ b ++ " ") $ Map.toList charToGMap
   
   return ("Key:\n" ++ key_out ++ "\n\nMessage:\n" ++ encoded)
 
