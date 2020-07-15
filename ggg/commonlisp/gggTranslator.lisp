@@ -41,3 +41,9 @@
     (loop for (c g) in letter-and-ix do (setf (gethash c h) g))
     h))
 
+(defun reverse_map (mp)
+  (let ((h (make-hash-table)))
+    (loop for key being the hash-keys of mp using (hash-value value)
+	  do (setf (gethash value h) key))
+    h))
+
