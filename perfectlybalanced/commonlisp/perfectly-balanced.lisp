@@ -18,4 +18,4 @@
   (let ((h (make-hash-table)))
     (progn
       (loop for i across str do (setf (gethash i h) (1+ (gethash i h 0))))
-      (<= 1 (length (remove-duplicates (alexandria:hash-table-values h)))))))
+      (reduce #'= (or (alexandria:hash-table-values h) '(0 0))))))
