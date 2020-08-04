@@ -27,7 +27,7 @@
 (defun move-left (coord coord-list)
   (find-if #'(lambda (x)
 	       (and (= (car coord) (car x))
-		    (> (cadr coord) (cadr x)))) coord-list))
+		    (> (cadr coord) (cadr x)))) coord-list :from-end t))
 
 (defun move-right (coord coord-list)
   (find-if #'(lambda (x)
@@ -37,31 +37,31 @@
 (defun move-up (coord coord-list)
   (find-if #'(lambda (x)
 	      (and (= (cadr coord) (cadr x))
-		   (> (car coord) (car x)))) coord-list))
+		   (> (car coord) (car x)))) coord-list :from-end t))
 
 (defun move-down (coord coord-list)
   (find-if #'(lambda (x)
-	       (and (== (cadr coord) (cadr x))
+	       (and (= (cadr coord) (cadr x))
 		    (< (car coord) (car x)))) coord-list))
 
 (defparameter *letter-coord-lookup*
   (let ((h (make-hash-table :test 'equal)))
-    (loop for i from 65 to 77
+    (loop for i from 65 to 78
 	  for ix = (- i 65)
 	  for key = (code-char i)
-	  do (setf (gethash key h) (list ix 0 :right)))
-    (loop for i from 77 to 90
-	  for ix = (- i 77)
+	  do (setf (gethash key h) (list ix -1 :right)))
+    (loop for i from 78 to 90
+	  for ix = (- i 78)
 	  for key = (code-char i)
-	  do (setf (gethash key h) (list (1- *max-mirror-size*) ix :up)))
+	  do (setf (gethash key h) (list *max-mirror-size* ix :up)))
     (loop for i from 97 to 109
 	  for ix = (- i 97)
 	  for key = (code-char i)
-	  do (setf (gethash key h) (list 0 ix :down)))
+	  do (setf (gethash key h) (list -1 ix :down)))
     (loop for i from 110 to 122
 	  for ix = (- i 110)
 	  for key = (code-char i)
-	  do (setf (gethash key h) (list ix (1- *max-mirror-size*) :left)))
+	  do (setf (gethash key h) (list ix *max-mirror-size* :left)))
     (maphash #'(lambda (k v)
 		 (destructuring-bind (a b dir) v
 		 (let ((new-dir (case dir (:left :right) (:right :left) (:up :down) (:down :up))))
@@ -84,19 +84,20 @@
 			  ((and (eq dir :up) (equal (caddr next-coord) #\/)) :right)
 			  ((and (eq dir :down) (equal (caddr next-coord) #\\)) :right)
 			  ((and (eq dir :down) (equal (caddr next-coord) #\/)) :left))))
-    (format t "~a ~a->~a ~a~%" start-coord dir next-coord next-dir)	  
+    ;;(format t "~a ~a->~a ~a~%" start-coord dir next-coord next-dir)	  
     (if next-coord
         (get-mirror-coords next-coord mirror-ixs next-dir)
-	(case dir (:left (list (car start-coord) 0) :left)
-	      (:right (list (car start-coord) (1- *max-mirror-size*) :right))
-	      (:up (list 0 (cadr start-coord) :up))
-	      (:down (list (1- *max-mirror-size*) (cadr start-coord) :down))))))
+	(case dir (:left (list (car start-coord) -1 :left))
+	      (:right (list (car start-coord) *max-mirror-size* :right))
+	      (:up (list -1 (cadr start-coord) :up))
+	      (:down (list  *max-mirror-size* (cadr start-coord) :down))))))
 	 
 	 
 
 
 (defun get-mirror-hash (mirror-list)
-  (let ((h (make-hash-table :test 'equal)))
+  (let ((h (make-hash-table :test 'equal))
+	(mirror-ixs (get-mirror-ixs mirror-list)))
     (progn
     (maphash #'(lambda (k v)
 		 (if (characterp k)
@@ -106,13 +107,18 @@
 				      *letter-coord-lookup*))))) *letter-coord-lookup*)
     h)))
 
-(with-open-file (stream "test-mirror.txt")
+(defun letter-check (letter)
+  (let* ((s-coord (gethash letter *letter-coord-lookup*))
+	 (e-coord (get-mirror-coords s-coord *mirror-ixs* (caddr s-coord))))
+    (gethash e-coord *letter-coord-lookup*)))
+
+(with-open-file (stream "../test-mirror.txt")
   (let ((lines (uiop/stream:read-file-lines stream)))
     (setf *words (elt lines 13))
-    (setf *mirror-hash* (get-mirror-hash (subseq lines 0 13))))
+    (setf *mirror-lines (subseq lines 0 13))
+    (setf *mirror-hash* (get-mirror-hash *mirror-lines)))
   )
 ;;(format t "~{~a~%~}" *mirror-hash*)
-;;(format "~a" (concatenate 'string (loop for i across *words collect (gethash i *mirror-hash* #\*))))
-(print (loop for i across *words collect (gethash i *mirror-hash*)))
+(format t "~a" (concatenate 'string (loop for i across *words collect (gethash i *mirror-hash* #\?))))
 
 
