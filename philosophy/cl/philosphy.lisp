@@ -2,7 +2,7 @@
 
 
 ;;(defvar  *request* (dex:get "https://en.wikipedia.org/wiki/John_W._Beschter"))
-(defparameter *link-sleep-time* .5)
+(defparameter *link-sleep-time* .1)
 
 (defun parse-links-from-request (request)
   (let ((parsed-content (lquery:$ (initialize request))))
@@ -60,7 +60,8 @@
 (defun find-in-n-steps (startAddress endAddress maxiters)
   (let ((iter (page-find-iter startAddress endAddress)))
     (labels ((find-step (startAddress endAddress step)
-		     (multiple-value-bind (lf ltv lv) (funcall iter)
+	       (multiple-value-bind (lf ltv lv) (funcall iter)
+		 (format t "step ~a: ~a~%" step (last lv))
 		       (if (or (= 0 step) lf)
 			   (values (- maxiters step) lf ltv lv)
 			   (find-step startAddress endAddress (1- step))))))
@@ -72,12 +73,13 @@
 
 (defparameter *root* "https://en.wikipedia.org/wiki/Cat")
 (defvar *end* "https://en.wikipedia.org/wiki/Adolf_Hitler")
-(multiple-value-bind (i lf ltv lv) (find-in-n-steps *root* *end* 3)
+(multiple-value-bind (i lf ltv lv) (find-in-n-steps *root* *end* 300)
   (print i)
   (defparameter *lf* lf)
   (defparameter *ltv* ltv)
   (defparameter *lv* lv)
   nil)
+(defparameter *tstiter* (page-find-iter *root* *end*))
 
 ;;(defvar startAddress *root*)
 ;;(defvar endAddress *end*)
