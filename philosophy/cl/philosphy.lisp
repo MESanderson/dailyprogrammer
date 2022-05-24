@@ -35,17 +35,34 @@
     (values (find endAddress full-wiki-links :test #'string=) full-wiki-links)))
 
 
+(defun update-links-to-vist (existing-links new-links)
+  (let ((links-head (first existing-links))
+	(links-tail (rest existing-links))
+	)
+    (remove-duplicates
+     (append links-tail
+	     (map 'list (lambda (x) (cons x links-head)) new-links))
+     )))
+
 (defun page-find-iter (startAddress endAddress)
-  (let ((links-to-visit (list startAddress))
+  (let ((links-to-visit (list (list startAddress)))
 	(links-visited '())
 	(link-found '()))
-  (lambda ()
-    (multiple-value-bind (found links) (findpage-from (car links-to-visit) endAddress)
-      (setf links-to-visit (remove-duplicates (append (cdr links-to-visit) links)))
-      (setf links-visited (append links-visited (list (car links-to-visit))))
-      (setf link-found found)
-      (values link-found links-to-visit links-visited)
-      ))))
+    
+    (lambda ()
+      (let ((nextLink (caar links-to-visit)))
+	(multiple-value-bind (found links) (findpage-from nextLink endAddress)
+	  
+	  (when found 
+	    (setf link-found (cons found (car links-to-visit))))
+	  
+	  (setf links-to-visit (update-links-to-vist links-to-visit links))
+	  
+	  (setf links-visited
+	    (append links-visited
+		    (first links-to-visit)))
+	  (values link-found links-to-visit links-visited)
+	  )))))
 
 ;; (defun find-in-n-steps (startAddress endAddress maxiters)
 ;;   (let ((iter (page-find-iter startAddress endAddress)))
@@ -61,9 +78,12 @@
   (let ((iter (page-find-iter startAddress endAddress)))
     (labels ((find-step (startAddress endAddress step)
 	       (multiple-value-bind (lf ltv lv) (funcall iter)
-		 (format t "step ~a: ~a~%" step (last lv))
 		       (if (or (= 0 step) lf)
-			   (values (- maxiters step) lf ltv lv)
+			   (values (- maxiters step)
+				   lf
+				   ;;ltv
+				   (car (remove-if (complement (lambda (x) (string= (car x) endAddress))) ltv))
+				   lv)
 			   (find-step startAddress endAddress (1- step))))))
     (find-step startAddress endAddress maxiters))))
 
@@ -71,15 +91,22 @@
 ;;(defparameter *text* (parse-text-from-request *request*))
 
 
+
 (defparameter *root* "https://en.wikipedia.org/wiki/Cat")
 (defvar *end* "https://en.wikipedia.org/wiki/Adolf_Hitler")
-(multiple-value-bind (i lf ltv lv) (find-in-n-steps *root* *end* 300)
+(multiple-value-bind (i lf ltv lv) (find-in-n-steps *root* *end* 50)
   (print i)
   (defparameter *lf* lf)
   (defparameter *ltv* ltv)
   (defparameter *lv* lv)
   nil)
 (defparameter *tstiter* (page-find-iter *root* *end*))
+
+(defun next-iter ()
+  (multiple-value-bind (lf ltv lv) (funcall *tstiter*)
+    (defparameter *lf* lf)
+    (defparameter *ltv* ltv)
+    (defparameter *lv* lv)))
 
 ;;(defvar startAddress *root*)
 ;;(defvar endAddress *end*)
