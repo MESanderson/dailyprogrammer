@@ -33,30 +33,19 @@ letter_to_ggg_map hdr_str = Map.fromList $ map list_to_tup2 (chunk 2  $ words hd
 ggg_to_letter_map hdr_str = Map.fromList $ map Tuple.swap $
   map list_to_tup2 (chunk 2 $ words hdr_str)
 
--- |Function for grouping by contiguous values "G/g" or non "G/g"
--- example: g_chunker "gGggOhnomoreGs" = ["gGgg", "Ohnomore", "G", "s"]
-g_chunker :: String -> [String]
-g_chunker str = groupBy chunkP str
-   where chunkP = (\ x y -> (toLower x == 'g') == (toLower y == 'g'))
+gCodeMatch gCode str = take (length gCode) str == gCode
 
--- |Function to decode a string of consecutive G/g values using a
+
+-- |Function to decode a ggg encoded string using a
 -- Map of G/g keys to letter values
-translate_g_chunk :: Map.Map [Char] [Char] -> [Char] -> [Char]
-translate_g_chunk _ "" = ""
-translate_g_chunk trnsMap str
-  | startsWithG = Map.findWithDefault "*" (take gChunkSize str) trnsMap ++
-                    translate_g_chunk trnsMap (drop gChunkSize str)
-  | otherwise = str
-  where startsWithG = 'g' == (toLower $ head str)
-        gChunkSize = (length . fst . head. Map.toList) trnsMap
-
-
--- |Function to encode string broken into consecutive 'g/G' values or non 'g/G' values
--- example: ["GgGggG", ", ", "ggGGGg", "!"] = "Oh, Hi!"
-g_rev_translater :: Map.Map [Char] [Char] -> [Char] -> [Char]
-g_rev_translater gToCharMap str =
-  concatMap (translate_g_chunk gToCharMap) chunked
-  where chunked = g_chunker str
+g_decoder :: Map.Map [Char] [Char] -> [Char] -> [Char]
+g_decoder _ [] = []
+g_decoder gToCharMap str 
+  | gMatches == [] = (head str) : (nextTrans (tail str))
+  | otherwise = (snd . head) gMatches ++ nextTrans (drop ((length . fst . head) gMatches) str)
+  where gListSorted = Map.toAscList gToCharMap
+        gMatches = filter (\(a,b) -> gCodeMatch a str) gListSorted
+        nextTrans = g_decoder gToCharMap
 
 
 -- |Function to encode message to g/G message
@@ -88,13 +77,14 @@ char_to_g_map_creator msg =
         uniqueLettersString = [[c] | c <- uniqueLetters]
         gggIter = [intTogggIter i | i <- [(toInteger letterOrdStart)..]]
 
-        
+
+
 
 exampleMsg =  "I did not! Oh hai mark."
 exampleChToGMap = char_to_g_map_creator exampleMsg
 exampleGToChMap = Map.fromList ([(b, a) | (a,b) <- Map.toList exampleChToGMap])
 exampleGggEncode = g_encoder  exampleChToGMap exampleMsg
-exampleRevEncode = g_rev_translater exampleGToChMap exampleGggEncode
+exampleRevEncode = g_decoder exampleGToChMap exampleGggEncode
 exampleTrue = exampleMsg == exampleRevEncode
 
 
@@ -105,19 +95,21 @@ decodePrompt = do
   g_msg <- getLine
 
   let gToCharMap = ggg_to_letter_map g_key
-  let decoded = g_rev_translater gToCharMap g_msg
+  let decoded = g_decoder gToCharMap g_msg
 
   return (decoded)
   
 
 encodePrompt = do
-  putStr "Please enter message"
+  putStr "Please enter message: "
   msg <- getLine
 
   let charToGMap = char_to_g_map_creator msg
   let encoded = g_encoder charToGMap msg
 
-  return (encoded)
+  let key_out = concatMap (\(a,b) -> a ++ " " ++ b ++ " ") $ Map.toList exampleChToGMap 
+  
+  return ("Key:\n" ++ key_out ++ "\n\nMessage:\n" ++ encoded)
 
 
 main = do
