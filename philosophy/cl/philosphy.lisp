@@ -1,7 +1,6 @@
 (ql:quickload '(:dexador :plump :lquery :lparallel))
 
 
-;;(defvar  *request* (dex:get "https://en.wikipedia.org/wiki/John_W._Beschter"))
 (defparameter *link-sleep-time* .1)
 
 (defun parse-links-from-request (request)
@@ -93,7 +92,7 @@
 
 
 (defparameter *root* "https://en.wikipedia.org/wiki/Cat")
-(defvar *end* "https://en.wikipedia.org/wiki/Adolf_Hitler")
+(defvar *end* "https://en.wikipedia.org/wiki/Deep-sea_fish")
 (multiple-value-bind (i lf ltv lv) (find-in-n-steps *root* *end* 50)
   (print i)
   (defparameter *lf* lf)
